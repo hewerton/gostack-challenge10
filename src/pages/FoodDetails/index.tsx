@@ -74,6 +74,15 @@ const FoodDetails: React.FC = () => {
   useEffect(() => {
     async function loadFood(): Promise<void> {
       // Load a specific food with extras based on routeParams id
+      const { id } = routeParams;
+      const res = await api.get(`/foods/${id}`);
+      setFood(res.data);
+      const newExtras = [...res.data.extras];
+      newExtras.forEach(e => {
+        e.quantity = 0;
+      });
+
+      setExtras(newExtras);
     }
 
     loadFood();
@@ -81,26 +90,46 @@ const FoodDetails: React.FC = () => {
 
   function handleIncrementExtra(id: number): void {
     // Increment extra quantity
+    const newExtras = [...extras];
+    const extra = newExtras.find(e => e.id === id);
+    extra.quantity += 1;
+    setExtras(newExtras);
   }
 
   function handleDecrementExtra(id: number): void {
     // Decrement extra quantity
+    const newExtras = [...extras];
+    const extra = newExtras.find(e => e.id === id);
+
+    if (extra.quantity > 0) {
+      extra.quantity -= 1;
+      setExtras(newExtras);
+    }
   }
 
   function handleIncrementFood(): void {
-    // Increment food quantity
+    setFoodQuantity(foodQuantity + 1);
   }
 
   function handleDecrementFood(): void {
-    // Decrement food quantity
+    if (foodQuantity > 1) {
+      setFoodQuantity(foodQuantity - 1);
+    }
   }
 
   const toggleFavorite = useCallback(() => {
     // Toggle if food is favorite or not
+    setIsFavorite(!isFavorite);
   }, [isFavorite, food]);
 
   const cartTotal = useMemo(() => {
     // Calculate cartTotal
+    const totalExtras = extras.reduce((p, c) => {
+      return p + c.quantity * c.value;
+    }, 0);
+
+    const totalFood = foodQuantity * food.price;
+    return totalFood + totalExtras;
   }, [extras, food, foodQuantity]);
 
   async function handleFinishOrder(): Promise<void> {
@@ -179,7 +208,9 @@ const FoodDetails: React.FC = () => {
         <TotalContainer>
           <Title>Total do pedido</Title>
           <PriceButtonContainer>
-            <TotalPrice testID="cart-total">{cartTotal}</TotalPrice>
+            <TotalPrice testID="cart-total">
+              {formatValue(cartTotal)}
+            </TotalPrice>
             <QuantityContainer>
               <Icon
                 size={15}
